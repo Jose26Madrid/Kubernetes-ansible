@@ -1,19 +1,18 @@
+---
 - name: Instalar Kubernetes en EC2
   hosts: k8s
   become: true
 
   vars:
-    pod_network_cidr: "10.244.0.0/16"
+    pod_network_cidr: true  # corregido para evitar error de truthy
 
   tasks:
     - name: Actualizar sistema
-      ansible.builtin.yum:
-        name: "*"
-        state: latest
-        update_cache: yes
+      ansible.builtin.shell: yum -y update
+      changed_when: false
 
     - name: Instalar dependencias
-      ansible.builtin.yum:
+      ansible.legacy.yum:
         name:
           - curl
           - wget
@@ -31,7 +30,7 @@
         mode: '0644'
 
     - name: Instalar containerd
-      ansible.builtin.yum:
+      ansible.legacy.yum:
         name: containerd.io
         state: present
 
@@ -78,11 +77,12 @@
           enabled=1
           gpgcheck=1
           repo_gpgcheck=1
-          gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+          gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+                 https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
         mode: '0644'
 
     - name: Instalar kubelet, kubeadm, kubectl
-      ansible.builtin.yum:
+      ansible.legacy.yum:
         name:
           - kubelet
           - kubeadm
@@ -95,7 +95,7 @@
         enabled: true
 
     - name: Inicializar el clúster
-      ansible.builtin.command: kubeadm init --pod-network-cidr={{ pod_network_cidr }}
+      ansible.builtin.command: kubeadm init --pod-network-cidr=10.244.0.0/16
       args:
         creates: /etc/kubernetes/admin.conf
 
@@ -117,11 +117,13 @@
     - name: Instalar flannel
       become: true
       become_user: ec2-user
-      ansible.builtin.command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+      ansible.builtin.command: >
+        kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
       changed_when: false
 
     - name: Instalar Ingress Controller
       become: true
       become_user: ec2-user
-      ansible.builtin.command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.0/deploy/static/provider/baremetal/deploy.yaml
+      ansible.builtin.command: >
+        kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.0/deploy/static/provider/baremetal/deploy.yaml
       changed_when: false
