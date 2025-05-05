@@ -37,7 +37,7 @@ repo-root/
 - Ansible ≥ 2.10
 - AWS CLI configurado
 - Par de claves en AWS llamado `"aws"`
-- En local: `/home/jose/aws.pem` y `.pub` generado con:
+- En local: `/home/user/aws.pem` y `.pub` generado con:
   ```bash
   ssh-keygen -y -f ~/aws.pem > ~/.ssh/aws.pub
   ```
