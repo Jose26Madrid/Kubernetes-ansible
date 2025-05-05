@@ -4,15 +4,17 @@
   become: true
 
   vars:
-    pod_network_cidr: true  # corregido para evitar error de truthy
+    pod_network_cidr: true
 
   tasks:
     - name: Actualizar sistema
-      ansible.builtin.shell: yum -y update
-      changed_when: false
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_cache: yes
 
     - name: Instalar dependencias
-      ansible.legacy.yum:
+      ansible.builtin.dnf:
         name:
           - curl
           - wget
@@ -30,7 +32,7 @@
         mode: '0644'
 
     - name: Instalar containerd
-      ansible.legacy.yum:
+      ansible.builtin.dnf:
         name: containerd.io
         state: present
 
@@ -82,7 +84,7 @@
         mode: '0644'
 
     - name: Instalar kubelet, kubeadm, kubectl
-      ansible.legacy.yum:
+      ansible.builtin.dnf:
         name:
           - kubelet
           - kubeadm
