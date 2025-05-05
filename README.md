@@ -1,19 +1,20 @@
 
-# ☁️ Kubernetes en AWS EC2 Spot con Terraform + Ansible
+# ☁️ Kubernetes en AWS EC2 Spot con Terraform + Ansible + Kubectl Local
 
-Este proyecto despliega un clúster Kubernetes de un solo nodo usando Terraform para la infraestructura y Ansible para la configuración. La instancia EC2 es del tipo Spot para reducir costes.
+Este proyecto despliega un clúster Kubernetes de un solo nodo usando Terraform para infraestructura, Ansible para configuración, y permite interactuar con el clúster desde tu máquina local mediante `kubectl`.
 
 ---
 
 ## 📦 Tecnologías
 
-- **Terraform**: Provisión de infraestructura (VPC, EC2, etc.)
-- **Ansible**: Instalación de Kubernetes, containerd, Flannel y NGINX Ingress
-- **AWS EC2 Spot**: Instancia económica (pero no persistente)
+- **Terraform**: Provisión de infraestructura (VPC, EC2 Spot, SG)
+- **Ansible**: Instalación de containerd, Kubernetes, Flannel, Ingress
+- **Python**: Automatiza todo el flujo
+- **kubectl**: Control del clúster desde tu equipo local
 
 ---
 
-## 📁 Estructura
+## 📁 Estructura del proyecto
 
 ```
 repo-root/
@@ -22,17 +23,19 @@ repo-root/
 │   ├── variables.tf
 │   ├── terraform.tfvars
 ├── install-k8s.yml
-├── deploy_with_ansible.sh
-├── inventory.ini                # Se genera automáticamente
+├── deploy_all.py                  # Script completo Python
+├── inventory.ini                  # Generado automáticamente
 ```
 
 ---
 
-## 🧰 Requisitos previos
+## 🧰 Requisitos
 
-- Clave SSH en AWS (ej: `aws.pem`)
+- Clave SSH (`~/aws.pem`) con permisos `chmod 400`
 - Terraform ≥ 1.3
-- Ansible ≥ 2.10 (`ansible --version`)
+- Ansible ≥ 2.10
+- Python 3 instalado
+- `kubectl` instalado (`apt` o `snap`)
 - AWS CLI configurado (`aws configure`)
 - Clave pública generada:
   ```bash
@@ -41,75 +44,63 @@ repo-root/
 
 ---
 
-## 🚀 Despliegue completo (infraestructura + Kubernetes)
+## 🚀 Despliegue automático completo
 
 ### 1. Dar permisos al script:
+
 ```bash
-chmod +x deploy_with_ansible.sh
+chmod +x deploy_all.py
 ```
 
-### 2. Ejecutar todo con un solo comando:
+### 2. Ejecutar:
+
 ```bash
-./deploy_with_ansible.sh
+./deploy_all.py
 ```
 
-Esto hará automáticamente:
-- Inicialización de Terraform
-- Creación de VPC, SG y EC2 Spot
-- Obtención de IP pública
-- Generación de `inventory.ini`
-- Instalación de Kubernetes + Flannel + Ingress en EC2
+Este script realiza automáticamente:
+
+1. Despliegue de infraestructura con Terraform
+2. Generación del inventario Ansible
+3. Instalación de Kubernetes con Ansible
+4. Copia del kubeconfig a `~/.kube/k8s-ec2-config`
+5. Añade automáticamente `export KUBECONFIG=~/.kube/k8s-ec2-config` a tu `~/.bashrc`
+6. Ejecuta `kubectl` localmente para verificar el clúster
 
 ---
 
-## ⏱️ Tiempo estimado de despliegue: **6–9 minutos**
+## ✅ Acceso local con kubectl
 
-| Fase                      | Tiempo aproximado |
-|---------------------------|-------------------|
-| Terraform infra           | ~1–2 minutos      |
-| EC2 + SSH + provisión     | ~30 seg           |
-| Ansible: instalar k8s     | ~4–6 minutos      |
-
----
-
-## 🌐 Acceso
-
-Una vez finalizado, accede desde el navegador:
-
-```
-http://<EC2_PUBLIC_IP>:30080
-```
-
-Obtén la IP con:
+Ya puedes usar `kubectl` desde tu máquina sin configurar nada más:
 
 ```bash
-terraform output -raw ec2_public_ip
-```
-
----
-
-## ✅ Verificación en EC2 (opcional)
-
-```bash
-ssh -i ~/aws.pem ec2-user@<EC2_PUBLIC_IP>
 kubectl get nodes
 kubectl get pods -A
 kubectl get svc -A
 ```
 
+El acceso persistente está configurado gracias al `export KUBECONFIG=~/.kube/k8s-ec2-config` añadido a `~/.bashrc`.
+
 ---
 
-## 🧼 Eliminar toda la infraestructura
+## ⏱ Tiempo estimado
+
+| Fase                        | Tiempo aprox. |
+|-----------------------------|---------------|
+| Terraform apply             | 1–2 min       |
+| Ansible (Kubernetes setup)  | 4–6 min       |
+| Total                       | 6–9 min       |
+
+---
+
+## 🧼 Destrucción de recursos
 
 ```bash
 cd terraform
 terraform destroy
 ```
 
-Esto elimina:
-- EC2
-- VPC, subnets
-- Security Groups
+Esto elimina EC2, VPC, subnets y security groups.
 
 ---
 
