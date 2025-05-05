@@ -1,0 +1,42 @@
+
+name: Infraestructura CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate:
+    name: Validar Terraform, Ansible y Scripts
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Clonar el repositorio
+      uses: actions/checkout@v4
+
+    - name: Instalar Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.6
+
+    - name: Validar sintaxis de Terraform
+      run: |
+        cd terraform
+        terraform init -backend=false
+        terraform validate
+        terraform fmt -check
+
+    - name: Instalar Ansible y dependencias
+      run: |
+        sudo apt update
+        sudo apt install -y ansible
+
+    - name: Validar YAMLs de Ansible
+      run: |
+        ansible-lint install-k8s.yml
+
+    - name: Verificar scripts Python
+      run: |
+        python3 -m py_compile deploy_with_ansible.py setup_kubeconfig.py
