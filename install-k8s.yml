@@ -4,14 +4,12 @@
   become: true
 
   vars:
-    pod_network_cidr: true
+    pod_network_cidr: "10.244.0.0/16"
 
   tasks:
     - name: Actualizar sistema
-      ansible.builtin.dnf:
-        name: "*"
-        state: latest
-        update_cache: yes
+      ansible.builtin.command: dnf -y upgrade
+      changed_when: false
 
     - name: Instalar dependencias
       ansible.builtin.dnf:
@@ -97,7 +95,7 @@
         enabled: true
 
     - name: Inicializar el clúster
-      ansible.builtin.command: kubeadm init --pod-network-cidr=10.244.0.0/16
+      ansible.builtin.command: kubeadm init --pod-network-cidr={{ pod_network_cidr }}
       args:
         creates: /etc/kubernetes/admin.conf
 
@@ -129,3 +127,4 @@
       ansible.builtin.command: >
         kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.0/deploy/static/provider/baremetal/deploy.yaml
       changed_when: false
+
