@@ -28,11 +28,12 @@ jobs:
         terraform validate
         terraform fmt -check
 
-    - name: Instalar Ansible y dependencias
+    - name: Instalar Ansible y ansible-lint
       run: |
         sudo apt update
-        sudo apt install -y ansible
-
+        sudo apt install -y ansible python3-pip
+        pip3 install ansible-lint
+    
     - name: Validar YAMLs de Ansible
       run: |
         ansible-lint install-k8s.yml
